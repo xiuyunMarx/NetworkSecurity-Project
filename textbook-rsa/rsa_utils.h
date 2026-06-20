@@ -2,10 +2,32 @@
 #include <fstream>
 #include <gmpxx.h>
 #include <iostream>
+#include <limits.h>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
+
 namespace textbookRSA {
+// 返回当前可执行文件所在目录
+inline auto executable_dir() -> std::string {
+	char buf[PATH_MAX];
+	const ssize_t len = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+	if (len <= 0)
+		return ".";
+	buf[len] = '\0';
+	const std::string path(buf);
+	const auto slash = path.find_last_of('/');
+	return slash == std::string::npos ? std::string(".") : path.substr(0, slash);
+}
+
+// 将相对文件名解析为相对可执行文件目录的路径
+inline auto resolve_key_path(const std::string &filename) -> std::string {
+	if (!filename.empty() && filename.front() == '/')
+		return filename;
+	return executable_dir() + "/" + filename;
+}
+
 inline auto power_mod(mpz_class base, mpz_class exp, mpz_class mod) {
 	mpz_class ret;
 	mpz_powm(ret.get_mpz_t(), base.get_mpz_t(), exp.get_mpz_t(), mod.get_mpz_t());

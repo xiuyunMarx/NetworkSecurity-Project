@@ -7,21 +7,24 @@
 
 namespace {
 auto print_usage(const char *program) -> void {
-	std::cerr << "Usage: " << program << " <plaintext>\n";
+	std::cerr << "Usage: " << program << " <plaintext> [public_key_file]\n";
 }
 } // namespace
 
 auto main(int argc, char *argv[]) -> int {
 	try {
-		if (argc != 2) {
+		if (argc < 2 || argc > 3) {
 			print_usage(argv[0]);
 			return 1;
 		}
 
 		const std::string plaintext = argv[1];
+		const std::string public_key_file =
+			argc >= 3 ? argv[2]
+					  : textbookRSA::resolve_key_path("../rsa_public_key.txt");
 
 		mpz_class n, e;
-		textbookRSA::read_public_key(n, e);
+		textbookRSA::read_public_key(n, e, public_key_file);
 
 		const mpz_class message = textbookRSA::string_to_mpz(plaintext);
 		if (message >= n)

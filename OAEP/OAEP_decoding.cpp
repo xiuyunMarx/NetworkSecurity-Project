@@ -10,13 +10,14 @@
 
 namespace {
 
-constexpr std::size_t DEFAULT_K0 = 128;
-constexpr std::size_t DEFAULT_K1 = 128;
+constexpr std::size_t DEFAULT_K0 = 512;
+constexpr std::size_t DEFAULT_K1 = 64;
+constexpr OAEP::HashAlgo DEFAULT_HASH = OAEP::HashAlgo::SHA512;
 
 auto print_usage(const char *program) -> void {
 	std::cerr << "Usage: " << program
 			  << " <ciphertext_hex|\"Ciphertext: ciphertext_hex\"> "
-				 "[k0_bits] [k1_bits] [private_key_file]\n";
+				 "[k0_bits] [k1_bits] [private_key_file] [hash]\n";
 }
 
 auto parse_size(const std::string &value, const std::string &name)
@@ -29,6 +30,14 @@ auto parse_size(const std::string &value, const std::string &name)
 	if (parsed_chars != value.size())
 		throw std::runtime_error(name + " must be a non-negative integer");
 	return parsed;
+}
+
+auto parse_hash(const std::string &value) -> OAEP::HashAlgo {
+	if (value == "sha256" || value == "SHA256")
+		return OAEP::HashAlgo::SHA256;
+	if (value == "sha512" || value == "SHA512")
+		return OAEP::HashAlgo::SHA512;
+	throw std::runtime_error("hash must be sha256 or sha512");
 }
 
 auto trim_left(std::string value) -> std::string {
@@ -50,7 +59,7 @@ auto normalize_ciphertext_arg(std::string value) -> std::string {
 
 auto main(int argc, char *argv[]) -> int {
 	try {
-		if (argc < 2 || argc > 6) {
+		if (argc < 2 || argc > 7) {
 			print_usage(argv[0]);
 			return 1;
 		}
@@ -66,7 +75,7 @@ auto main(int argc, char *argv[]) -> int {
 			ciphertext_text = normalize_ciphertext_arg(argv[1]);
 		}
 
-		if (argc - next_arg > 3) {
+		if (argc - next_arg > 4) {
 			print_usage(argv[0]);
 			return 1;
 		}
@@ -80,6 +89,9 @@ auto main(int argc, char *argv[]) -> int {
 		const std::string private_key_file =
 			argc > next_arg + 2 ? argv[next_arg + 2]
 								: "../textbook-rsa/rsa_private_key.txt";
+		const OAEP::HashAlgo hash = argc > next_arg + 3
+										? parse_hash(argv[next_arg + 3])
+										: DEFAULT_HASH;
 
 		mpz_class ciphertext;
 		if (ciphertext.set_str(ciphertext_text, 16) != 0)
@@ -88,7 +100,7 @@ auto main(int argc, char *argv[]) -> int {
 		mpz_class n, d;
 		textbookRSA::read_private_key(n, d, private_key_file);
 
-		const OAEP::Protocol protocol = OAEP::OAEP_init_protocol(k0, k1);
+		const OAEP::Protocol protocol = OAEP::OAEP_init_protocol(k0, k1, hash);
 		const OAEP::DecryptionResult result =
 			OAEP::decrypt_message(ciphertext, d, n, protocol);
 

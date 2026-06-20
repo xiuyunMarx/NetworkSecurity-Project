@@ -14,9 +14,12 @@
 
 namespace OAEP {
 
+enum class HashAlgo { SHA256, SHA512 };
+
 struct Protocol {
 	std::size_t k0;
 	std::size_t k1;
+	HashAlgo hash = HashAlgo::SHA512;
 };
 
 struct EncodingResult {
@@ -45,10 +48,11 @@ struct DecryptionResult {
 	std::string message;
 };
 
-inline auto OAEP_init_protocol(std::size_t k0, std::size_t k1) -> Protocol {
+inline auto OAEP_init_protocol(std::size_t k0, std::size_t k1,
+							   HashAlgo hash = HashAlgo::SHA512) -> Protocol {
 	if (k0 == 0)
 		throw std::runtime_error("k0 must be positive");
-	return Protocol{k0, k1};
+	return Protocol{k0, k1, hash};
 }
 
 inline auto bit_length(const mpz_class &value) -> std::size_t {
@@ -110,6 +114,18 @@ inline auto sha256(const std::vector<unsigned char> &input)
 	return digest;
 }
 
+inline auto sha512(const std::vector<unsigned char> &input)
+	-> std::vector<unsigned char> {
+	std::vector<unsigned char> digest(SHA512_DIGEST_LENGTH, 0);
+	SHA512(input.data(), input.size(), digest.data());
+	return digest;
+}
+
+inline auto hash_digest(HashAlgo algo, const std::vector<unsigned char> &input)
+	-> std::vector<unsigned char> {
+	return algo == HashAlgo::SHA512 ? sha512(input) : sha256(input);
+}
+
 inline auto append_u32_be(std::vector<unsigned char> &buffer,
 						  std::uint32_t value) -> void {
 	buffer.push_back(static_cast<unsigned char>((value >> 24) & 0xff));
@@ -118,9 +134,9 @@ inline auto append_u32_be(std::vector<unsigned char> &buffer,
 	buffer.push_back(static_cast<unsigned char>(value & 0xff));
 }
 
-inline auto mgf1_sha256(const std::string &label,
-						const std::vector<unsigned char> &seed,
-						std::size_t output_bits) -> mpz_class {
+inline auto mgf1(const std::string &label,
+				 const std::vector<unsigned char> &seed,
+				 std::size_t output_bits, HashAlgo algo) -> mpz_class {
 	const std::size_t output_bytes = byte_length_for_bits(output_bits);
 	std::vector<unsigned char> output;
 	output.reserve(output_bytes);
@@ -132,7 +148,7 @@ inline auto mgf1_sha256(const std::string &label,
 		block.insert(block.end(), seed.begin(), seed.end());
 		append_u32_be(block, counter);
 
-		const auto digest = sha256(block);
+		const auto digest = hash_digest(algo, block);
 		const std::size_t need = output_bytes - output.size();
 		output.insert(output.end(), digest.begin(),
 					  digest.begin() +
@@ -145,12 +161,14 @@ inline auto mgf1_sha256(const std::string &label,
 
 inline auto G(const mpz_class &r, const Protocol &protocol,
 			  std::size_t output_bits) -> mpz_class {
-	return mgf1_sha256("G", to_fixed_width_bytes(r, protocol.k0), output_bits);
+	return mgf1("G", to_fixed_width_bytes(r, protocol.k0), output_bits,
+				protocol.hash);
 }
 
 inline auto H(const mpz_class &X, std::size_t x_bits,
 			  const Protocol &protocol) -> mpz_class {
-	return mgf1_sha256("H", to_fixed_width_bytes(X, x_bits), protocol.k0);
+	return mgf1("H", to_fixed_width_bytes(X, x_bits), protocol.k0,
+				protocol.hash);
 }
 
 inline auto random_bit_string(std::size_t bits) -> mpz_class {
