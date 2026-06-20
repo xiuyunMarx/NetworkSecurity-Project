@@ -1,6 +1,7 @@
 #include "OAEP_utils.h"
 
 #include <exception>
+#include <fstream>
 #include <gmpxx.h>
 #include <iostream>
 #include <stdexcept>
@@ -47,7 +48,7 @@ auto main(int argc, char *argv[]) -> int {
 		const std::size_t k1 =
 			argc >= 4 ? parse_size(argv[3], "k1_bits") : DEFAULT_K1;
 		const std::string public_key_file =
-			argc >= 5 ? argv[4] : "../textbook-rsa/rsa_public_key.txt";
+			argc >= 5 ? argv[4] : "../../../Task1/RSA_Public_Key.txt";
 		const OAEP::HashAlgo hash =
 			argc >= 6 ? parse_hash(argv[5]) : DEFAULT_HASH;
 
@@ -73,6 +74,19 @@ auto main(int argc, char *argv[]) -> int {
 				  << "OAEP encoded message: "
 				  << OAEP::fixed_hex(result.padding.encoded, n_bits) << '\n'
 				  << "Ciphertext: " << result.ciphertext.get_str(16) << '\n';
+
+		// 保存输出文件
+		//   Random_Number.txt       : OAEP 随机数 r（k0 bit，128 hex）
+		//   Message_After_Padding.txt: 编码块 EM = X || Y（n bit，256 hex）
+		//   Encrypted_Message.txt    : RSA-OAEP 密文（n bit，256 hex）
+		std::ofstream("../../Random_Number.txt")
+			<< OAEP::fixed_hex(result.padding.r, protocol.k0) << '\n';
+		std::ofstream("../../Message_After_Padding.txt")
+			<< OAEP::fixed_hex(result.padding.encoded, n_bits) << '\n';
+		std::ofstream("../../Encrypted_Message.txt")
+			<< OAEP::fixed_hex(result.ciphertext, n_bits) << '\n';
+		std::cout << "outputs written to Task3/Random_Number.txt, "
+					 "Message_After_Padding.txt, Encrypted_Message.txt\n";
 		return 0;
 	} catch (const std::exception &ex) {
 		std::cerr << "Error: " << ex.what() << std::endl;

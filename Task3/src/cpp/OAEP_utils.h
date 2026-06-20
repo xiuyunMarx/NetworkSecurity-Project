@@ -1,7 +1,7 @@
 #ifndef OAEP_UTILS_H
 #define OAEP_UTILS_H
 
-#include "../textbook-rsa/rsa_utils.h"
+#include "../../../Task1/src/cpp/rsa_utils.h"
 
 #include <algorithm>
 #include <cstddef>

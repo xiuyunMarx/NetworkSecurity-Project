@@ -40,7 +40,7 @@ auto main(int argc, char *argv[]) -> int {
 		std::string ciphertext_text = normalize_ciphertext_arg(argv[1]);
 		const std::string private_key_file =
 			argc >= 3 ? argv[2]
-					  : textbookRSA::resolve_key_path("../rsa_private_key.txt");
+					  : textbookRSA::resolve_key_path("../../RSA_Secret_Key.txt");
 
 		mpz_class ciphertext;
 		if (ciphertext.set_str(ciphertext_text, 16) != 0)

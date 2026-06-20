@@ -29,7 +29,7 @@ m = Dec(c') * s^-1 mod n
 ## Build
 
 ```bash
-make -C CCA-on-textbook-rsa
+make -C Task2/src/cpp/cca-prelude
 ```
 
 ## Run
@@ -37,17 +37,18 @@ make -C CCA-on-textbook-rsa
 Generate keys and encrypt a message first:
 
 ```bash
-cd textbook-rsa
+cd Task1/src/cpp
 make
-./rsa/keygen
-./rsa/rsa_enc "attack-test"
+./keygen
+./rsa_enc "attack-test"
 ```
 
 Use the printed ciphertext hex:
 
 ```bash
-cd ..
-./CCA-on-textbook-rsa/cca_attack <ciphertext_hex>
+cd ../../../Task2/src/cpp/cca-prelude
+make
+./cca_attack <ciphertext_hex>
 ```
 
 The program prints the forged ciphertext sent to the oracle and the recovered

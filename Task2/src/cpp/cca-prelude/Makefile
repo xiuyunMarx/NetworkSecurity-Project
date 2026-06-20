@@ -4,7 +4,7 @@ LDLIBS := -lgmpxx -lgmp
 
 all: cca_attack
 
-cca_attack: cca_attack.cpp ../textbook-rsa/rsa_utils.h
+cca_attack: cca_attack.cpp ../../../../Task1/src/cpp/rsa_utils.h
 	$(CXX) $(CXXFLAGS) $< -o $@ $(LDLIBS)
 
 clean:

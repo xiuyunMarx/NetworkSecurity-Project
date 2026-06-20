@@ -1,4 +1,4 @@
-#include "../textbook-rsa/rsa_utils.h"
+#include "../../../Task1/src/cpp/rsa_utils.h"
 
 #include <fstream>
 #include <gmpxx.h>
@@ -127,27 +127,57 @@ History client_send(const Server &server) {
 }
 
 void write_history(const Server &server, const History &h) {
-	std::ofstream out("history_message.txt");
+	std::ofstream out(textbookRSA::resolve_key_path("../../History_Message.txt"));
 	out << "rsa_n_hex=" << server.n.get_str(16) << "\n";
 	out << "rsa_e_dec=" << server.e << "\n";
 	out << "rsa_encrypted_aes_key_hex=" << h.rsa_key.get_str(16) << "\n";
 	out << "aes_encrypted_wup_request_hex=" << hex(h.encrypted_request) << "\n";
 }
 
-mpz_class recover_key(const Server &server, const History &h) {
+// 保存输出文件。
+//   AES_Key.txt          : 128-bit AES 密钥，32 个小写 hex 字符，保留前导零
+//   WUP_Request.txt      : 原始 WUP 请求字节的 hex
+//   AES_Encrypted_WUP.txt: AES-128-ECB 密文的 hex
+void write_client_files(const History &h) {
+	std::ofstream(textbookRSA::resolve_key_path("../../AES_Key.txt"))
+		<< hex(h.aes_key) << "\n";
+	std::ofstream(textbookRSA::resolve_key_path("../../WUP_Request.txt"))
+		<< hex(bytes(h.plain_request)) << "\n";
+	std::ofstream(textbookRSA::resolve_key_path("../../AES_Encrypted_WUP.txt"))
+		<< hex(h.encrypted_request) << "\n";
+}
+
+mpz_class recover_key(const Server &server, const History &h, std::ostream &log,
+					  int &query_count) {
 	mpz_class known = 0;
 	const Bytes probe = bytes(wup_request("cca2-probe"));
+	query_count = 0;
 
 	for (int bit = 0; bit < 128; ++bit) {
 		const int shift = 127 - bit;
 		const mpz_class factor = mpz_class(1) << shift;
 		const mpz_class shifted_rsa =
 			h.rsa_key * textbookRSA::encrypt(factor, server.e, server.n) % server.n;
+		const mpz_class known_before = known;
 		const Bytes guess_zero_key = low128(known << shift);
 		const Bytes encrypted_probe = aes_ecb_encrypt(probe, guess_zero_key);
 
-		if (!server.handle(shifted_rsa, encrypted_probe))
+		const bool accepted = server.handle(shifted_rsa, encrypted_probe).has_value();
+		++query_count;
+		const int recovered_bit = accepted ? 0 : 1;
+		if (!accepted)
 			known |= mpz_class(1) << bit;
+
+		log << "[Round " << std::setw(3) << std::setfill('0') << (bit + 1) << "]\n"
+			<< "target_original_bit=" << bit << "\n"
+			<< "shift=" << shift << "\n"
+			<< "transformed_rsa_ciphertext=" << shifted_rsa.get_str(16) << "\n"
+			<< "known_low_bits_before=0x" << known_before.get_str(16) << "\n"
+			<< "candidate_bit=0\n"
+			<< "candidate_server_key=" << hex(guess_zero_key) << "\n"
+			<< "oracle_result=" << (accepted ? "ACCEPT" : "REJECT") << "\n"
+			<< "recovered_bit=" << recovered_bit << "\n"
+			<< "known_low_bits_after=0x" << known.get_str(16) << "\n\n";
 
 		if ((bit + 1) % 16 == 0)
 			std::cout << "recovered " << bit + 1 << "/128 bits\n";
@@ -161,20 +191,33 @@ int main() {
 
 	const History history = client_send(server);
 	write_history(server, history);
+	write_client_files(history);
 
-	std::cout << "history written to history_message.txt\n";
+	std::cout << "history written to History_Message.txt\n";
 	std::cout << "RSA-encrypted AES key: " << history.rsa_key.get_str(16) << "\n";
 	std::cout << "AES-encrypted WUP request: " << hex(history.encrypted_request)
 			  << "\n\n";
 
-	const mpz_class recovered = recover_key(server, history);
+	std::ofstream log(textbookRSA::resolve_key_path("../../attack_log.txt"));
+	int query_count = 0;
+	const mpz_class recovered = recover_key(server, history, log, query_count);
 	const Bytes recovered_key = low128(recovered);
 	const auto recovered_request =
 		aes_ecb_decrypt(history.encrypted_request, recovered_key);
+	const std::string recovered_plaintext =
+		recovered_request
+			? std::string(recovered_request->begin(), recovered_request->end())
+			: std::string();
+	const bool keys_match = recovered_key == history.aes_key;
+
+	log << "actual_aes_key=" << hex(history.aes_key) << "\n"
+		<< "recovered_aes_key=" << hex(recovered_key) << "\n"
+		<< "keys_match=" << (keys_match ? "true" : "false") << "\n"
+		<< "history_wup_plaintext=" << recovered_plaintext << "\n"
+		<< "query_count=" << query_count << "\n";
 
 	std::cout << "\nactual AES key:    " << hex(history.aes_key) << "\n";
 	std::cout << "recovered AES key: " << hex(recovered_key) << "\n";
-	std::cout << "decrypted historical request:\n"
-			  << std::string(recovered_request->begin(), recovered_request->end());
+	std::cout << "decrypted historical request:\n" << recovered_plaintext;
 	return 0;
 }

@@ -90,7 +90,8 @@ inline auto generate_prime(size_t bits, gmp_randstate_t state) -> mpz_class {
 }
 
 // 密钥生成函数：生成 RSA 密钥对
-inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e, mpz_class &d) {
+inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e,
+						  mpz_class &d, mpz_class &p, mpz_class &q) {
 	gmp_randstate_t state;
 	gmp_randinit_default(state);
 	unsigned long seed =
@@ -98,7 +99,7 @@ inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e, mpz_class
 	gmp_randseed_ui(state, seed);
 
 	size_t prime_bits = key_size / 2;
-	mpz_class p, q, phi;
+	mpz_class phi;
 
 	e = 65537; // 常用公钥指数
 
@@ -122,6 +123,12 @@ inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e, mpz_class
 	// 计算私钥 d，满足 e * d = 1 (mod phi)
 	mpz_invert(d.get_mpz_t(), e.get_mpz_t(), phi.get_mpz_t());
 	gmp_randclear(state);
+}
+
+inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e,
+						  mpz_class &d) {
+	mpz_class p, q;
+	generate_keys(key_size, n, e, d, p, q);
 }
 
 // 辅助函数：将字符串转换为大整数
@@ -158,7 +165,7 @@ inline auto decrypt(const mpz_class &c, const mpz_class &d, const mpz_class &n)
 }
 
 inline auto save_public_key(const mpz_class &n, const mpz_class &e,
-							const std::string &filename = "rsa_public_key.txt")
+							const std::string &filename = "RSA_Public_Key.txt")
 	-> void {
 	std::ofstream ofs(filename);
 	if (!ofs)
@@ -168,7 +175,7 @@ inline auto save_public_key(const mpz_class &n, const mpz_class &e,
 }
 
 inline auto save_private_key(const mpz_class &n, const mpz_class &d,
-							 const std::string &filename = "rsa_private_key.txt")
+							 const std::string &filename = "RSA_Secret_Key.txt")
 	-> void {
 	std::ofstream ofs(filename);
 	if (!ofs)
@@ -177,8 +184,40 @@ inline auto save_private_key(const mpz_class &n, const mpz_class &d,
 	std::cout << "私钥已保存到 " << filename << std::endl;
 }
 
+// 将单个大整数以十进制保存
+inline auto save_decimal(const mpz_class &value, const std::string &filename)
+	-> void {
+	std::ofstream ofs(filename);
+	if (!ofs)
+		throw std::runtime_error("无法打开文件 " + filename + " 进行写入");
+	ofs << value << std::endl;
+}
+
+// 保存原始文本消息
+inline auto save_text(const std::string &text, const std::string &filename)
+	-> void {
+	std::ofstream ofs(filename);
+	if (!ofs)
+		throw std::runtime_error("无法打开文件 " + filename + " 进行写入");
+	ofs << text;
+}
+
+// 将密文以固定宽度小写十六进制保存（不带 0x，补足前导零）。
+// modulus_bits 为 RSA 模数位数，1024-bit -> 256 个 hex 字符。
+inline auto save_ciphertext_hex(const mpz_class &c, std::size_t modulus_bits,
+								const std::string &filename) -> void {
+	std::string hex = c.get_str(16);
+	const std::size_t width = (modulus_bits + 3) / 4;
+	if (hex.size() < width)
+		hex.insert(hex.begin(), width - hex.size(), '0');
+	std::ofstream ofs(filename);
+	if (!ofs)
+		throw std::runtime_error("无法打开文件 " + filename + " 进行写入");
+	ofs << hex << std::endl;
+}
+
 inline auto read_public_key(mpz_class &n, mpz_class &e,
-							const std::string &filename = "rsa_public_key.txt")
+							const std::string &filename = "RSA_Public_Key.txt")
 	-> void {
 	std::ifstream ifs(filename);
 	if (!ifs)
@@ -188,7 +227,7 @@ inline auto read_public_key(mpz_class &n, mpz_class &e,
 }
 
 inline auto read_private_key(mpz_class &n, mpz_class &d,
-							 const std::string &filename = "rsa_private_key.txt")
+							 const std::string &filename = "RSA_Secret_Key.txt")
 	-> void {
 	std::ifstream ifs(filename);
 	if (!ifs)

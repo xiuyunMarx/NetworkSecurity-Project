@@ -56,12 +56,12 @@ Repeat for all 128 bits, then decrypt the historical AES request.
 ## Build And Run
 
 ```bash
-cd WUP-CCA2-attack
+cd Task2/src/cpp
 make
 ./wup_cca2
 ```
 
-The program writes `history_message.txt`, recovers the AES key through the
+The program writes `History_Message.txt`, recovers the AES key through the
 server oracle, and decrypts the historical WUP request.
 
 ## References

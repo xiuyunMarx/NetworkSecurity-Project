@@ -1,4 +1,4 @@
-#include "../textbook-rsa/rsa_utils.h"
+#include "../../../../Task1/src/cpp/rsa_utils.h"
 
 #include <gmpxx.h>
 #include <iostream>
@@ -20,10 +20,10 @@ int main(int argc, char **argv) {
 	const auto slash = self.find_last_of("/\\");
 	const std::string keydir =
 		(slash == std::string::npos ? "." : self.substr(0, slash)) +
-		"/../textbook-rsa/";
+		"/../../../../Task1/";
 
-	textbookRSA::read_public_key(n, e, keydir + "rsa_public_key.txt");
-	textbookRSA::read_private_key(n2, d, keydir + "rsa_private_key.txt");
+	textbookRSA::read_public_key(n, e, keydir + "RSA_Public_Key.txt");
+	textbookRSA::read_private_key(n2, d, keydir + "RSA_Secret_Key.txt");
 	if (n != n2 || c < 0 || c >= n) {
 		std::cerr << "bad key or ciphertext\n";
 		return 1;

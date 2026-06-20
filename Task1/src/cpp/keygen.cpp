@@ -38,17 +38,23 @@ auto main(int argc, char *argv[]) -> int {
 
 		const std::string public_key_file =
 			argc >= 3 ? argv[2]
-					  : textbookRSA::resolve_key_path("../rsa_public_key.txt");
+					  : textbookRSA::resolve_key_path("../../RSA_Public_Key.txt");
 		const std::string private_key_file =
 			argc >= 4 ? argv[3]
-					  : textbookRSA::resolve_key_path("../rsa_private_key.txt");
+					  : textbookRSA::resolve_key_path("../../RSA_Secret_Key.txt");
 
-		mpz_class n, e, d;
-		textbookRSA::generate_keys(key_size, n, e, d);
+		mpz_class n, e, d, p, q;
+		textbookRSA::generate_keys(key_size, n, e, d, p, q);
 		textbookRSA::save_public_key(n, e, public_key_file);
 		textbookRSA::save_private_key(n, d, private_key_file);
+		textbookRSA::save_decimal(
+			n, textbookRSA::resolve_key_path("../../RSA_Moduler.txt"));
+		textbookRSA::save_decimal(
+			p, textbookRSA::resolve_key_path("../../RSA_p.txt"));
+		textbookRSA::save_decimal(
+			q, textbookRSA::resolve_key_path("../../RSA_q.txt"));
 
-		std::cout << "密钥生成完成，公钥和私钥已保存。" << std::endl;
+		std::cout << "密钥生成完成，公钥、私钥、模数与素数已保存。" << std::endl;
 		return 0;
 	} catch (const std::exception &ex) {
 		std::cerr << "Error: " << ex.what() << std::endl;

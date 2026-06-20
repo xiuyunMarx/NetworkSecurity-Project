@@ -88,10 +88,10 @@ auto main(int argc, char *argv[]) -> int {
 								   : DEFAULT_K1;
 		const std::string public_key_file =
 			argc > next_arg + 2 ? argv[next_arg + 2]
-								: "../textbook-rsa/rsa_public_key.txt";
+								: "../../../Task1/RSA_Public_Key.txt";
 		const std::string private_key_file =
 			argc > next_arg + 3 ? argv[next_arg + 3]
-								: "../textbook-rsa/rsa_private_key.txt";
+								: "../../../Task1/RSA_Secret_Key.txt";
 		const OAEP::HashAlgo hash = argc > next_arg + 4
 										? parse_hash(argv[next_arg + 4])
 										: DEFAULT_HASH;
