@@ -1,6 +1,6 @@
 CXX := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -O2
-LDLIBS := -lgmpxx -lgmp
+LDLIBS := -lgmpxx -lgmp -lcrypto
 
 PROGRAMS := keygen rsa_enc rsa_dec
 

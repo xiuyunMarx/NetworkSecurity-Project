@@ -1,12 +1,12 @@
-#include <chrono>
 #include <fstream>
 #include <gmpxx.h>
 #include <iostream>
 #include <limits.h>
-#include <random>
+#include <openssl/rand.h>
 #include <stdexcept>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 namespace textbookRSA {
 // 返回当前可执行文件所在目录
@@ -26,6 +26,17 @@ inline auto resolve_key_path(const std::string &filename) -> std::string {
 	if (!filename.empty() && filename.front() == '/')
 		return filename;
 	return executable_dir() + "/" + filename;
+}
+
+// 用 OpenSSL RAND_bytes
+inline auto seed_randstate(gmp_randstate_t state, std::size_t seed_bytes = 32)
+	-> void {
+	std::vector<unsigned char> buf(seed_bytes);
+	if (RAND_bytes(buf.data(), static_cast<int>(buf.size())) != 1)
+		throw std::runtime_error("RAND_bytes failed to seed GMP random state");
+	mpz_class seed;
+	mpz_import(seed.get_mpz_t(), buf.size(), 1, 1, 1, 0, buf.data());
+	gmp_randseed(state, seed.get_mpz_t());
 }
 
 inline auto power_mod(mpz_class base, mpz_class exp, mpz_class mod) {
@@ -94,9 +105,7 @@ inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e,
 						  mpz_class &d, mpz_class &p, mpz_class &q) {
 	gmp_randstate_t state;
 	gmp_randinit_default(state);
-	unsigned long seed =
-		std::chrono::high_resolution_clock::now().time_since_epoch().count();
-	gmp_randseed_ui(state, seed);
+	seed_randstate(state);
 
 	size_t prime_bits = key_size / 2;
 	mpz_class phi;
@@ -110,6 +119,9 @@ inline void generate_keys(size_t key_size, mpz_class &n, mpz_class &e,
 			continue; // 保证 p 和 q 不相等
 
 		n = p * q;
+		// 保证 n 为 key_size 位
+		if (mpz_sizeinbase(n.get_mpz_t(), 2) != key_size)
+			continue;
 		phi = (p - 1) * (q - 1);
 
 		// 确保 e 与 phi(n) 互质
