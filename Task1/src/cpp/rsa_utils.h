@@ -42,12 +42,16 @@ inline auto power_mod(mpz_class base, mpz_class exp, mpz_class mod) {
 }
 
 inline auto miller_rabin(const mpz_class &num, int k, gmp_randstate_t state) -> bool {
-	if (num <= 1 || num == 4)
+	if (num <= 1)
 		return false;
 	if (num <= 3)
 		return true;
 	if (num % 2 == 0)
 		return false;
+        
+	if (mpz_perfect_power_p(num.get_mpz_t()) != 0) {
+		return false;
+	}
 
 	mpz_class d = num - 1;
 	unsigned long long s = 0;
