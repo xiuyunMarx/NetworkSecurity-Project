@@ -1,12 +1,3 @@
-"""WUP request construction and validity verification (consistent with C++ wup_cca2.cpp).
-
-WUP text format:
-    WUP/1\ncmd=sync\nuid=10001\nnonce=<nonce>\nbody=browser-history-demo\nEND\n
-
-valid_wup rules (corresponding to C++ valid_wup):
-    Starts with "WUP/1\n", contains "\ncmd=", ends with "END\n".
-"""
-
 from __future__ import annotations
 
 

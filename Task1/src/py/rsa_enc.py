@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-"""Textbook RSA encryption for Task1 plaintext.
-
-Usage:  python rsa_enc.py <plaintext> [public_key_file]
-
-Default public key file is Task1/RSA_Public_Key.txt.
-Prints "Ciphertext: <hex>", and writes Raw_Message.txt and Encrypted_Message.txt.
-"""
-
 import sys
 from pathlib import Path
 

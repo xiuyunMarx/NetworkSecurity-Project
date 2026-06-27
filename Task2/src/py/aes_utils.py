@@ -1,9 +1,3 @@
-"""AES-128-ECB + manual PKCS#7 (Python reference implementation).
-
-The guidelines require implementing PKCS#7 padding manually, using a mature library (pycryptodome) only for AES block operations.
-Maintains byte-level consistency with the OpenSSL EVP (automatic PKCS#7) results in Task2/src/cpp/wup_cca2.cpp.
-"""
-
 from __future__ import annotations
 
 from Crypto.Cipher import AES
@@ -33,7 +27,6 @@ def aes_ecb_encrypt(key: bytes, plaintext: bytes) -> bytes:
 
 
 def aes_ecb_decrypt(key: bytes, ciphertext: bytes) -> bytes | None:
-    """Decrypt and remove PKCS#7 padding; returns None on failure (invalid length/padding), corresponding to std::nullopt in C++."""
     if len(ciphertext) == 0 or len(ciphertext) % BLOCK_SIZE != 0:
         return None
     cipher = AES.new(key, AES.MODE_ECB)

@@ -1,16 +1,3 @@
-"""Educational version of RSA-OAEP (Python reference implementation).
-
-Maintains byte-level consistency with the C++ implementation in Task3/src/cpp/OAEP_utils.h:
-- Parameters: n=1024, k0=512, k1=64, hash function SHA-512;
-- G(r) = MGF1("G", fixed k0 bits of r as bytes, n-k0 bits);
-- H(X) = MGF1("H", fixed n-k0 bits of X as bytes, k0 bits);
-- MGF1 counter is 4-byte big-endian, starting from 0;
-- Encoding: padded = m << k1, X = padded ^ G(r), Y = r ^ H(X), EM = (X << k0) + Y;
-- After encoding, if EM >= n, resample r (Guideline Approach A).
-
-Operating entirely in the integer domain, fully equivalent to the C++ mpz implementation.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -39,7 +26,6 @@ def _byte_len_for_bits(bits: int) -> int:
 
 
 def to_fixed_width_bytes(value: int, bits: int) -> bytes:
-    """Convert integer to a byte string of fixed bits width (big-endian, padded with leading zeros)."""
     if value < 0:
         raise ValueError("negative values cannot be encoded as bit strings")
     if value.bit_length() > bits:
@@ -48,7 +34,6 @@ def to_fixed_width_bytes(value: int, bits: int) -> bytes:
 
 
 def mgf1(label: str, seed: bytes, output_bits: int, hash_name: str) -> int:
-    """MGF1: digest = Hash(label || seed || counter_be32), concatenated to output_bits."""
     hash_fn = _HASHES[hash_name]
     output_bytes = _byte_len_for_bits(output_bits)
     out = bytearray()
@@ -79,7 +64,6 @@ def _validate(n_bits: int, proto: Protocol) -> None:
 
 
 def oaep_encode_int(message: int, n_bits: int, proto: Protocol, r: int) -> dict:
-    """Encode with given r (deterministic, used for mutual verification / unit tests). Returns {r, X, Y, encoded}."""
     _validate(n_bits, proto)
     if message < 0:
         raise ValueError("message must be non-negative")
@@ -96,14 +80,12 @@ def oaep_encode_int(message: int, n_bits: int, proto: Protocol, r: int) -> dict:
 
 
 def oaep_encode_random(message: int, n_bits: int, proto: Protocol) -> dict:
-    """Encode with randomly sampled r (r is a cryptographically secure random number of k0 bits)."""
     r = int.from_bytes(secrets.token_bytes(_byte_len_for_bits(proto.k0)), "big")
     r &= _bit_mask(proto.k0)
     return oaep_encode_int(message, n_bits, proto, r)
 
 
 def oaep_decode_int(encoded: int, n_bits: int, proto: Protocol) -> dict:
-    """OAEP decode and verify trailing k1 zero bits. Returns {X, Y, r, padded, message}."""
     _validate(n_bits, proto)
     if encoded < 0:
         raise ValueError("encoded message must be non-negative")
@@ -125,7 +107,6 @@ def oaep_decode_int(encoded: int, n_bits: int, proto: Protocol) -> dict:
 
 def encrypt_message(message_int: int, e: int, n: int, proto: Protocol,
                     max_attempts: int = 128) -> dict:
-    """OAEP encoding + RSA encryption. Loops resampling r until EM < n."""
     n_bits = n.bit_length()
     for _ in range(max_attempts):
         enc = oaep_encode_random(message_int, n_bits, proto)
@@ -136,7 +117,6 @@ def encrypt_message(message_int: int, e: int, n: int, proto: Protocol,
 
 
 def decrypt_message(ciphertext: int, d: int, n: int, proto: Protocol) -> dict:
-    """RSA decryption + OAEP decoding. Returns {..., encoded, message}."""
     if not 0 <= ciphertext < n:
         raise ValueError("ciphertext is outside the RSA message space")
     encoded = pow(ciphertext, d, n)

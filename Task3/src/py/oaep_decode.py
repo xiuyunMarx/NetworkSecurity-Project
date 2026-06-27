@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-"""RSA-OAEP decryption (educational version, default k0=512 k1=64 SHA-512).
-
-Usage:  python oaep_decode.py <ciphertext_hex> [k0_bits] [k1_bits] [private_key_file]
-        python oaep_decode.py "Ciphertext: <hex>" [k0_bits] [k1_bits] [private_key_file]
-
-Reuses the RSA private key from Task1. Prints the recovered r, X, Y, padded, and plaintext.
-"""
-
 import sys
 from pathlib import Path
 

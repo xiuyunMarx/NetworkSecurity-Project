@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""Task2: WUP protocol + bit-by-bit CCA2 attack (reproducing Knockel et al. 2018 §4.1).
-
-Workflow:
-  1. Server generates its own 1024-bit RSA key;
-  2. Client generates a 128-bit AES session key, encrypts it with RSA, and uses it to encrypt a WUP request via AES-128-ECB;
-  3. Generate historical messages (RSA ciphertext + AES ciphertext);
-  4. Attacker recovers the AES key bit-by-bit using only the public key, historical messages, and the server's ACCEPT/REJECT oracle;
-  5. Decrypt the historical WUP using the recovered key.
-
-Output (written to Task2/ directory):
-  AES_Key.txt / WUP_Request.txt / AES_Encrypted_WUP.txt / History_Message.txt / attack_log.txt
-"""
-
 import secrets
 import sys
 from pathlib import Path
@@ -28,15 +14,10 @@ PROBE_NONCE = "cca2-probe"
 
 
 def low128_bytes(value: int) -> bytes:
-    """Take the lowest 128 bits of the integer, exporting as 16 bytes (big-endian, right-aligned keeping leading zeros)."""
     return (value & ((1 << 128) - 1)).to_bytes(16, "big")
 
 
 class WUPServer:
-    """Holds the RSA private key and exposes only the ACCEPT/REJECT oracle query()->bool.
-
-    Reproduces the key behavior of QQ Browser: after RSA decryption, only the lowest 128 bits are taken as the AES session key.
-    """
 
     def __init__(self, n: int, e: int, d: int):
         self._n = n
@@ -55,7 +36,6 @@ class WUPServer:
 
 
 class CCA2Attacker:
-    """Only holds the public key and oracle callback, without access to the private key d or the actual AES key."""
 
     def __init__(self, public_key: tuple[int, int], oracle, victim_rsa_ct: int):
         self._n, self._e = public_key
@@ -102,7 +82,6 @@ def main() -> int:
     n, e, d = keys["n"], keys["e"], keys["d"]
     server = WUPServer(n, e, d)
 
-    # --- Client: Generate session key and historical messages ---
     aes_key = secrets.token_bytes(16)
     plain_request = build_wup_request("20260616")
     rsa_ct = rsa_core.rsa_encrypt_int(rsa_core.bytes_to_int(aes_key), e, n)
@@ -121,7 +100,6 @@ def main() -> int:
     print(f"RSA-encrypted AES key: {format(rsa_ct, 'x')}")
     print(f"AES-encrypted WUP request: {encrypted_request.hex()}\n")
 
-    # --- Attacker: Recover key using only the public key + oracle ---
     attacker = CCA2Attacker(server.public_key, server.query, rsa_ct)
     log_lines: list[str] = []
     recovered, query_count = attacker.recover_key(log_lines)

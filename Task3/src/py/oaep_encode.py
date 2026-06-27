@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""RSA-OAEP encryption (educational version, default k0=512 k1=64 SHA-512).
-
-Usage:  python oaep_encode.py <plaintext> [k0_bits] [k1_bits] [public_key_file]
-
-Reuses the RSA public key from Task1. Output (written to Task3/ directory):
-  Random_Number.txt        : OAEP random number r (k0 bits, 128 hex)
-  Message_After_Padding.txt: Encoded block EM = X || Y (n bits, 256 hex)
-  Encrypted_Message.txt    : RSA-OAEP ciphertext (n bits, 256 hex)
-"""
-
 import sys
 from pathlib import Path
 

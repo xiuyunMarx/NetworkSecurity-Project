@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-"""Textbook RSA decryption.
-
-Usage:  python rsa_dec.py <ciphertext_hex> [private_key_file]
-        python rsa_dec.py "Ciphertext: <ciphertext_hex>" [private_key_file]
-
-Default private key file is Task1/RSA_Secret_Key.txt. Prints "Plaintext: ...".
-"""
-
 import sys
 from pathlib import Path
 
